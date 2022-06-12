@@ -1,0 +1,23 @@
+---
+
+#  - name: Copy install pkg
+#    copy:
+#      src: terraform_1.1.9_linux_amd64.zip
+#      dest: /tmp/terraform_1.1.9_linux_amd64.zip
+
+  - name: Unzip terraform archive
+    unarchive:
+      src: terraform_1.1.9_linux_amd64.zip
+      dest: /usr/bin/
+
+  - name: Copy terraform config with yandex provider
+    template:
+      src: ".terraformrc"
+      dest: "/etc/terraform/.terraformrc"
+
+  - name: Copy terraform config with provider src
+    copy:
+      content: "export TF_CLI_CONFIG_FILE='/etc/terraform/.terraformrc'"
+      dest: "/etc/profile.d/terraform.sh"
+
+  
