@@ -8,8 +8,8 @@ terraform {
 }
 
 provider "yandex" {
-  token     = "<OAuth>"
-  cloud_id  = "<идентификатор облака>"
-  folder_id = "<идентификатор каталога>"
-  zone      = "<зона доступности по умолчанию>"
+  token     = "{{tf_token}}"
+  cloud_id  = "{{tf_cloud_id}}"
+  folder_id = "{{tf_folder_id}}"
+  zone      = "{{tf_zon}}"
 }
