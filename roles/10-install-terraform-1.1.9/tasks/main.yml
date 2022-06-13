@@ -27,7 +27,7 @@
 
   - name: Create project dir
     file:
-      path: yandex
+      path: "{{tr_project_dir}}"
       owner: ansible
       group: ansible
       mode: '0755'
@@ -36,12 +36,12 @@
   - name: Copy initial config
     template:
       src: main.tf
-      dest: yandex/main.tf
+      dest: "{{tr_project_dir}}/main.tf"
   
   - name: Init terraform
     shell: |
       export TF_CLI_CONFIG_FILE='/etc/terraform/.terraformrc'
-      cd yandex/
+      cd {{tr_project_dir}}/
       terraform init -no-color 
 
 

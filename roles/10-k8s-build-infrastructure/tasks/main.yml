@@ -1,0 +1,12 @@
+---
+
+  - name: Copy infrastructure plan
+    template:
+      src: k8s.tf.j2
+      dest: "{{k8s_project_dir}}/k8s.tf"
+
+  - name: Copy user metadata
+    template:
+      src: meta.txt.j2
+      dest: "{{k8s_project_dir}}/meta.txt"
+

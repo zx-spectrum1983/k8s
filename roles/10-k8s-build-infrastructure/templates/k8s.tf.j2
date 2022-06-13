@@ -1,0 +1,37 @@
+resource "yandex_compute_instance" "master" {
+  count = {{k8s_master_count}}
+  name = "master${count.index}"
+
+  resources {
+    cores  = {{k8s_master_cores}}
+    memory = {{k8s_master_memory}}
+    core_fraction = {{k8s_master_cpu_percent}}
+  }
+
+  boot_disk {
+    initialize_params {
+      image_id = "{{k8s_os_image}}"
+      size = {{k8s_master_hdd_size_gb}}
+    }
+  }
+
+  network_interface {
+    subnet_id = yandex_vpc_subnet.subnet-k8s.id
+    nat       = true
+  }
+
+  metadata = {
+    user-data = "${file("meta.txt")}"
+  }
+}
+
+resource "yandex_vpc_network" "network-k8s" {
+  name = "{{k8s_network_name}}"
+}
+
+resource "yandex_vpc_subnet" "subnet-k8s" {
+  name           = "{{k8s_subnet_name}}"
+  zone           = "ru-central1-b"
+  network_id     = yandex_vpc_network.network-k8s.id
+  v4_cidr_blocks = ["{{k8s_local_network}}"]
+}
