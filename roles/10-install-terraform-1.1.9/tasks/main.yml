@@ -1,5 +1,10 @@
 ---
 
+  - name: Install Unzip
+    package:
+      name: unzip
+      state: latest
+
   - name: Unzip terraform archive
     unarchive:
       src: terraform_1.1.9_linux_amd64.zip
@@ -23,6 +28,9 @@
   - name: Create project dir
     file:
       path: yandex
+      owner: ansible
+      group: ansible
+      mode: '0755'
       state: directory
 
   - name: Copy initial config
@@ -31,4 +39,9 @@
       dest: yandex/main.tf
   
   - name: Init terraform
-    shell: cd yandex && terraform init
+    shell: |
+      export TF_CLI_CONFIG_FILE='/etc/terraform/.terraformrc'
+      cd yandex/
+      terraform init -no-color 
+
+
