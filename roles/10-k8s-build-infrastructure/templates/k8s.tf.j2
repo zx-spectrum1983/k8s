@@ -35,3 +35,7 @@ resource "yandex_vpc_subnet" "subnet-k8s" {
   network_id     = yandex_vpc_network.network-k8s.id
   v4_cidr_blocks = ["{{k8s_local_network}}"]
 }
+
+output "external_ips" {
+  value = yandex_compute_instance.master[*].network_interface.0.nat_ip_address
+}

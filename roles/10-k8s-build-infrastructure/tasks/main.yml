@@ -10,3 +10,40 @@
       src: meta.txt.j2
       dest: "{{k8s_project_dir}}/meta.txt"
 
+  - name: Apply plan
+    shell: |
+      export TF_CLI_CONFIG_FILE='/etc/terraform/.terraformrc'
+      cd {{k8s_project_dir}}/
+      terraform apply -auto-approve
+
+  - name: Get info about instances
+    shell: |
+      cd {{k8s_project_dir}}/
+      terraform output -json
+    register: k8s_plan_json
+
+#  - name: Output -json
+#    debug:
+#      msg: "--> {{item}}"
+#    loop: "{{(k8s_plan_json.stdout | from_json).external_ips.value}}"
+
+  - name: Add new masters to inventory
+    lineinfile:
+      path: "{{inventory_file}}"
+      line: "master{{i}} ansible_host={{item}}"
+      insertafter: \[k8s_master\].*
+    loop: "{{(k8s_plan_json.stdout | from_json).external_ips.value}}"
+    loop_control:
+      index_var: i
+    delegate_to: 127.0.0.1
+    become: true
+    become_user: "{{localhost_localuser}}"
+
+#  - name: Add hosts to inventory
+#    add_host:
+#      name: "master{{i}}"
+#      groups: "k8s_master"
+#      ansible_host: "{{item}}"
+#    loop: "{{(k8s_plan_json.stdout | from_json).external_ips.value}}"
+#    loop_control:
+#      index_var: i
