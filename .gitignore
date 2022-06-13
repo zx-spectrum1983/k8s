@@ -1,3 +1,4 @@
 .gitsecret/keys/random_seed
 !*.secret
 roles/10-install-terraform-1.1.9/vars/main.yml
+inventory/hosts.ini
