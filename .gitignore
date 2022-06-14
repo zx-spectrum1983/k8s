@@ -3,3 +3,4 @@
 roles/10-install-terraform-1.1.9/vars/main.yml
 inventory/hosts.ini
 roles/10-k8s-build-infrastructure/vars/main.yml
+roles/10-k8s-destroy-infrastructure/vars/main.yml

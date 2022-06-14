@@ -1,12 +1,12 @@
 ---
 
 # Выполнить любую роль из коллекции
-# ansible-playbook -l group_from_inventory playbooks/play-role.yml -e "ROLE=base-install-pkgs " --check
+# ansible-playbook -l group_from_inventory playbooks/play-role.yml -e "ROLE=base-install-pkgs facts=false" --check
 
  - hosts: all
 #   remote_user: ansible
 #   become: yes
-   gather_facts: false
+   gather_facts: "{{facts}}"
    roles:
      - '{{ ROLE }}'
 

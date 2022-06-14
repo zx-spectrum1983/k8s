@@ -1,0 +1,124 @@
+---
+
+  - name: Wait max 600 seconds for nodes connection
+    wait_for_connection:
+
+  - name: Install essentials
+    package:
+      name:
+         - mc
+         - psmisc
+         - net-tools
+         - curl
+         - ca-certificates
+         - git
+         - gnupg
+      state: latest
+
+  - name: Disable swap
+    shell: swapoff -a
+
+  - name: Disable swap in fstab
+    replace:
+      path: /etc/fstab
+      regexp: '^([^#].*?\sswap\s+sw\s+.*)$'
+      replace: '# \1'
+
+  - name: Centos - Install kubelet kubeadm kubectl
+    block:
+#      - name: Centos - Add kubernetes repo
+#        shell: |
+#          cat <<EOF | sudo tee /etc/yum.repos.d/kubernetes.repo
+#          [kubernetes]
+#          name=Kubernetes
+#          baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-\$basearch
+#          enabled=1
+#          gpgcheck=1
+#          repo_gpgcheck=1
+#          gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+#          exclude=kubelet kubeadm kubectl
+#          EOF
+      - name: Centos - Import yum-key.gpg
+        rpm_key:
+          state: present
+          key: https://packages.cloud.google.com/yum/doc/yum-key.gpg
+      - name: Centos - Import rpm-package-key.gpg
+        rpm_key:
+          state: present
+          key: https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+      - name: Centos - Add kubernetes repo
+        yum_repository:
+          name: kubernetes
+          description: Kubernetes
+          baseurl: https://packages.cloud.google.com/yum/repos/kubernetes-el7-\$basearch
+          gpgkey: https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+          gpgcheck: no
+          repo_gpgcheck: no
+          exclude: kubelet kubeadm kubectl
+      - name: Centos - Disable SELinux
+        shell: |
+          sudo setenforce 0
+          sudo sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
+      - name: Centos - Install kubelet kubeadm kubectl
+        yum:
+          name:
+            - kubelet
+            - kubeadm
+            - kubectl
+          disable_excludes: kubernetes
+          state: present
+      - name: Centos - Enable kubelet
+        service:
+          name: kubelet
+          enabled: true
+    when: ansible_distribution == "CentOS"
+
+  - name: Debian - Install kubelet kubeadm kubectl
+    block:
+      - name: Debian - Install essentials
+        apt:
+          pkg:
+            - apt-transport-https
+      - name: Debian - Add kubernetes gpg key
+        apt_key:
+          url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+          state: present
+      - name: Debian - Add kubernetes repo
+        apt_repository:
+          repo: deb http://apt.kubernetes.io/ kubernetes-xenial main
+          state: present
+      - name: Debian - Install kubelet kubeadm kubectl and other packages
+        apt:
+          pkg:
+            - kubelet
+            - kubeadm
+            - kubectl
+            - unzip
+            - tar
+            - btrfs-tools
+            - libseccomp2
+            - socat
+            - util-linux
+            - curl
+            - nfs-common
+            - portmap
+            - ceph-common
+            - python-apt
+          update_cache: yes
+      - name: Debian - Hold installed kube pkgs
+        dpkg_selections:
+          name: "{{item}}"
+          selection: hold
+        loop:
+          - kubelet
+          - kubeadm
+          - kubectl
+      - name: Debian - Enable and restart kubelet
+        systemd:
+          name: kubelet
+          state: restarted
+          enabled: yes
+          daemon_reload: yes
+    when: ansible_distribution == "Debian"
+
+  

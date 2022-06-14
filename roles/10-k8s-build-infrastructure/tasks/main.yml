@@ -32,7 +32,19 @@
       path: "{{inventory_file}}"
       line: "master{{i}} ansible_host={{item}}"
       insertafter: \[k8s_master\].*
-    loop: "{{(k8s_plan_json.stdout | from_json).external_ips.value}}"
+    loop: "{{(k8s_plan_json.stdout | from_json).external_ips_master.value}}"
+    loop_control:
+      index_var: i
+    delegate_to: 127.0.0.1
+    become: true
+    become_user: "{{localhost_localuser}}"
+
+  - name: Add new nodes to inventory
+    lineinfile:
+      path: "{{inventory_file}}"
+      line: "node{{i}} ansible_host={{item}}"
+      insertafter: \[k8s_node\].*
+    loop: "{{(k8s_plan_json.stdout | from_json).external_ips_node.value}}"
     loop_control:
       index_var: i
     delegate_to: 127.0.0.1
