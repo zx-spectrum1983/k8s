@@ -1,0 +1,31 @@
+---
+
+- name: Init cluster on master0
+  block:
+
+  - name: Delete containerd config
+    file:
+      path: /etc/containerd/config.toml
+      state: absent
+  - name: Restart containerd
+    service:
+      name: containerd
+      state: restarted
+  - name: Prepare init config
+    template:
+      src: kubeadm-init.yaml.j2
+      dest: kubeadm-init.yaml
+  - name: Init kubernetes cluster
+    shell: kubeadm init --config=kubeadm-init.yaml
+    register: init_status
+  - debug: var=init_status.stdout_lines
+  - name: Копируем конф Для пользователя ansible
+    shell: |
+      mkdir -p $HOME/.kube
+      cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+      chown $(id -u):$(id -g) $HOME/.kube/config
+      exit 0
+  - name: Install calico
+    shell: kubectl apply -f https://docs.projectcalico.org/v3.23/manifests/calico.yaml
+
+  when: inventory_hostname is search("master0")

@@ -5,3 +5,4 @@ inventory/hosts.ini
 roles/10-k8s-build-infrastructure/vars/main.yml
 roles/10-k8s-destroy-infrastructure/vars/main.yml
 roles/90-install-etcd/vars/main.yml
+roles/20-k8s-init-cluster/vars/main.yml
