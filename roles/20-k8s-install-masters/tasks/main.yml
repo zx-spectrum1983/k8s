@@ -3,6 +3,10 @@
   - name: Wait max 600 seconds for nodes connection
     wait_for_connection:
 
+  - name: Set hostname
+    hostname:
+      name: "{{inventory_hostname}}"
+
   - name: Install essentials
     package:
       name:

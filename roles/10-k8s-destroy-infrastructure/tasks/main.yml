@@ -9,11 +9,11 @@
     become: true
     become_user: "{{localhost_localuser}}"
 
-  - name: Remove nodes from inventory
+  - name: Remove workers from inventory
     lineinfile:
       path: "{{inventory_file}}"
       state: absent
-      regexp: '^node.*'
+      regexp: '^worker.*'
     delegate_to: 127.0.0.1
     become: true
     become_user: "{{localhost_localuser}}"
@@ -22,5 +22,5 @@
     shell: |
       export TF_CLI_CONFIG_FILE='/etc/terraform/.terraformrc'
       cd {{k8s_project_dir}}/
-      terraform destroy -auto-approve
+      terraform destroy -auto-approve -no-color
 

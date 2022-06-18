@@ -1,8 +1,7 @@
 resource "yandex_compute_instance" "master" {
   count = {{k8s_master_count}}
   name = "master${count.index}"
-  hostname = "master${count.index}-{{tf_cloud_id}}"
-
+  
   resources {
     cores  = {{k8s_master_cores}}
     memory = {{k8s_master_memory}}
@@ -19,6 +18,10 @@ resource "yandex_compute_instance" "master" {
   network_interface {
     subnet_id = yandex_vpc_subnet.subnet-k8s.id
     nat       = true
+    dns_record {
+      fqdn = "master${count.index}.k8s.local."
+      dns_zone_id = yandex_dns_zone.zone-k8s.id
+    }
   }
 
   metadata = {
@@ -26,27 +29,30 @@ resource "yandex_compute_instance" "master" {
   }
 }
 
-resource "yandex_compute_instance" "node" {
-  count = {{k8s_node_count}}
-  name = "node${count.index}"
-  hostname = "node${count.index}-{{tf_cloud_id}}"
+resource "yandex_compute_instance" "worker" {
+  count = {{k8s_worker_count}}
+  name = "worker${count.index}"
 
   resources {
-    cores  = {{k8s_node_cores}}
-    memory = {{k8s_node_memory}}
-    core_fraction = {{k8s_node_cpu_percent}}
+    cores  = {{k8s_worker_cores}}
+    memory = {{k8s_worker_memory}}
+    core_fraction = {{k8s_worker_cpu_percent}}
   }
 
   boot_disk {
     initialize_params {
       image_id = "{{k8s_os_image}}"
-      size = {{k8s_node_hdd_size_gb}}
+      size = {{k8s_worker_hdd_size_gb}}
     }
   }
 
   network_interface {
     subnet_id = yandex_vpc_subnet.subnet-k8s.id
     nat       = true
+    dns_record {
+      fqdn = "worker${count.index}.k8s.local."
+      dns_zone_id = yandex_dns_zone.zone-k8s.id
+    }
   }
 
   metadata = {
@@ -58,6 +64,10 @@ resource "yandex_vpc_network" "network-k8s" {
   name = "{{k8s_network_name}}"
 }
 
+data "yandex_vpc_network" "default" {
+  name="default"
+  }
+
 resource "yandex_vpc_subnet" "subnet-k8s" {
   name           = "{{k8s_subnet_name}}"
   zone           = "ru-central1-b"
@@ -65,28 +75,43 @@ resource "yandex_vpc_subnet" "subnet-k8s" {
   v4_cidr_blocks = ["{{k8s_local_network}}"]
 }
 
+resource "yandex_dns_zone" "zone-k8s" {
+  name        = "k8s"
+  zone             = "k8s.local."
+  public           = false
+  private_networks = [yandex_vpc_network.network-k8s.id, data.yandex_vpc_network.default.id]
+}
+
 output "nat_ip_master" {
   value = yandex_compute_instance.master[*].network_interface.0.nat_ip_address
 }
 
-output "nat_ip_node" {
-  value = yandex_compute_instance.node[*].network_interface.0.nat_ip_address
+output "nat_ip_worker" {
+  value = yandex_compute_instance.worker[*].network_interface.0.nat_ip_address
 }
 
 output "ip_master" {
   value = yandex_compute_instance.master[*].network_interface.0.ip_address
 }
 
-output "ip_node" {
-  value = yandex_compute_instance.node[*].network_interface.0.ip_address
+output "ip_worker" {
+  value = yandex_compute_instance.worker[*].network_interface.0.ip_address
 }
+
+#output "fqdn_master" {
+#  value = yandex_compute_instance.master[*].hostname
+#}
+
+#output "fqdn_node" {
+#  value = yandex_compute_instance.node[*].hostname
+#}
 
 output "fqdn_master" {
-  value = yandex_compute_instance.master[*].hostname
+  value = yandex_compute_instance.master[*].network_interface.0.dns_record[0].fqdn
 }
 
-output "fqdn_node" {
-  value = yandex_compute_instance.node[*].hostname
+output "fqdn_worker" {
+  value = yandex_compute_instance.worker[*].network_interface.0.dns_record[0].fqdn
 }
 
 #output "data_master" {

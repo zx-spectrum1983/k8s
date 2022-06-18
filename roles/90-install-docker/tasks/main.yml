@@ -4,7 +4,7 @@
 
   - name: Centos - Install Docker
     block:
-      - name: Uninstall previous docker
+      - name: Centos - Uninstall previous docker
         yum:
           name:
             - docker
@@ -16,13 +16,13 @@
             - docker-logrotate
             - docker-engine
           state: absent
-      - name: Install docker repo
+      - name: Centos - Install docker repo
         yum_repository:
           name: docker-ce
           description: docker-ce yum repo
           baseurl: https://download.docker.com/linux/centos/$releasever/$basearch/stable
           gpgcheck: no
-      - name: Install docker-ce
+      - name: Centos - Install docker-ce
         yum:
           name:
             - docker-ce
@@ -30,7 +30,7 @@
             - containerd.io
             - docker-compose-plugin
           state: present
-      - name: Start docker-ce
+      - name: Centos - Start docker-ce
         service:
           name: docker
           state: restarted
@@ -40,7 +40,7 @@
 
   - name: Debian - Install Docker
     block:
-    - name: Uninstall previous docker
+    - name: Debian - Uninstall previous docker
       apt:
         pkg:
           - docker
@@ -49,7 +49,7 @@
           - containerd
           - runc
         state: absent
-    - name: Install requirements
+    - name: Debian - Install requirements
       apt:
         pkg:
           - apt-transport-https
@@ -57,14 +57,14 @@
           - curl
           - gnupg2
           - software-properties-common
-    - name: Add gpg apt-key
+    - name: Debian - Add gpg apt-key
       shell: |
         curl -fsSL https://download.docker.com/linux/debian/gpg | apt-key add -
         apt-key fingerprint 0EBFCD88
         exit 0
-    - name: Add docker repo
+    - name: Debian - Add docker repo
       shell: add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/debian $(lsb_release -cs) stable"
-    - name: Install docker
+    - name: Debian - Install docker
       apt:
         pkg:
           - docker-ce
