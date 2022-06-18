@@ -1,0 +1,18 @@
+[Unit]
+Description=etcd
+Documentation=https://github.com/coreos/etcd
+Conflicts=etcd.service
+Conflicts=etcd2.service
+
+[Service]
+EnvironmentFile=/etc/etcd.env
+Type=notify
+Restart=always
+RestartSec=5s
+LimitNOFILE=40000
+TimeoutStartSec=0
+
+ExecStart=/usr/local/bin/etcd --name {{ansible_hostname}} --data-dir /var/lib/etcd --listen-client-urls http://{{ansible_priv_ip}}:2379,http://{{ansible_priv_ip}}:4001,http://127.0.0.1:2379,http://127.0.0.1:4001 --advertise-client-urls http://{{ansible_priv_ip}}:2379,http://{{ansible_priv_ip}}:4001 --listen-peer-urls http://{{ansible_priv_ip}}:2380,http://127.0.0.1:2380 --initial-advertise-peer-urls http://{{ansible_priv_ip}}:2380 --initial-cluster {% for item in groups['k8s_master'] %}{{ hostvars[item]['ansible_hostname'] }}=http://{{ hostvars[item]['ansible_priv_ip'] }}:2380,{% endfor %} --initial-cluster-token {{etcdToken}} --initial-cluster-state new
+
+[Install]
+WantedBy=multi-user.target
