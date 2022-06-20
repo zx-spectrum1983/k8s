@@ -11,16 +11,19 @@ etcd:
   external:
     endpoints:
 {% for item in groups['k8s_master'] %}
-    - "http://{{ hostvars[item]['ansible_priv_ip'] }}:2379"
+    - "http://{{ hostvars[item]['inventory_hostname'] }}:2379"
 {% endfor %}
 apiServer:
   certSANs:
+{% for item in groups['k8s_master'] %}
+  - "{{ hostvars[item]['inventory_hostname'] }}"
+{% endfor %}
 {% for item in groups['k8s_master'] %}
   - "{{ hostvars[item]['ansible_priv_ip'] }}"
 {% endfor %}
   - "127.0.0.1"
   timeoutForControlPlane: 4m0s
-controlPlaneEndpoint: "{{ansible_priv_ip}}:6443"
+controlPlaneEndpoint: "{{inventory_hostname}}:6443"
 clusterName: k8s
 networking:
   dnsDomain: k8s.local

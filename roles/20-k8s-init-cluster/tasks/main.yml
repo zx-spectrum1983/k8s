@@ -1,8 +1,21 @@
 ---
 
+- name: Set master0 in variable
+  set_fact:
+    k8s_master0: "{{ groups.k8s_master | select('match', '.*master0.*') | first }}"
+
 - name: Init cluster on master0
   block:
 
+  - name: Copy ssh rsa key from local to master0
+    copy:
+      src: ~/.ssh/id_rsa
+      dest: /root/.ssh/id_rsa
+      mode: '0400'
+  - name: Import rsa key
+    shell: |
+      eval `ssh-agent -s`
+      ssh-add /root/.ssh/id_rsa
   - name: Delete containerd config
     file:
       path: /etc/containerd/config.toml
@@ -15,17 +28,80 @@
     template:
       src: kubeadm-init.yaml.j2
       dest: kubeadm-init.yaml
-  - name: Init kubernetes cluster
+  - name: Reset previous cluster
+    shell: kubeadm reset -f
+  - name: Init new kubernetes cluster
     shell: kubeadm init --config=kubeadm-init.yaml
     register: init_status
   - debug: var=init_status.stdout_lines
   - name: Копируем конф Для пользователя ansible
     shell: |
+      rm -r $HOME/.kube
       mkdir -p $HOME/.kube
       cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
       chown $(id -u):$(id -g) $HOME/.kube/config
       exit 0
+  - name: Get calico manifest
+    get_url:
+      url: https://docs.projectcalico.org/v3.23/manifests/calico.yaml
+      dest: /home/ansible/calico.yaml
+  - name: Replace untolerated master to control-plane
+    replace:
+      path: /home/ansible/calico.yaml
+      regexp: 'node-role.kubernetes.io/master'
+      replace: "node-role.kubernetes.io/control-plane"
+  - name: Remove untolerated taint
+    shell: |
+      kubectl taint nodes {{inventory_hostname}} node-role.kubernetes.io/master-
+      exit 0
   - name: Install calico
-    shell: kubectl apply -f https://docs.projectcalico.org/v3.23/manifests/calico.yaml
-
+    shell: kubectl apply -f /home/ansible/calico.yaml
+  - name: Get join command
+    shell: kubeadm token create --print-join-command
+    register: k8s_join
+#  - name: Check pods
+#    shell: kubectl get pods -A
+#    register: pods_status
+#  - name: Print pods status
+#    debug:
+#      msg: "{{pods_status.stdout}}"
   when: inventory_hostname is search("master0")
+
+#- name: Get join command
+#  shell: kubeadm token create --print-join-command
+#  register: k8s_join
+#  when: inventory_hostname is search("master0")
+
+- name: Init cluster on other masters
+  block:
+  - name: Reset previous cluster
+    shell: kubeadm reset -f
+  - name: Copy certs to other masters
+    synchronize:
+      src: /etc/kubernetes/pki
+      dest: /etc/kubernetes
+    delegate_to: "{{k8s_master0}}"
+  - name: Delete containerd config
+    file:
+      path: /etc/containerd/config.toml
+      state: absent
+  - name: Restart containerd
+    service:
+      name: containerd
+      state: restarted
+#  - name: Удаляем конфигурации от предыдущего кластера
+#    file:
+#      path: /etc/kubernetes/kubelet.conf
+#      state: absent
+  - name: Join to kubernetes cluster
+    shell: "{{hostvars[k8s_master0].k8s_join.stdout}} --control-plane"
+    register: join_status
+  - debug: var=join_status.stdout_lines
+  - name: Копируем конф Для пользователя ansible
+    shell: |
+      rm -r $HOME/.kube
+      mkdir -p $HOME/.kube
+      cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+      chown $(id -u):$(id -g) $HOME/.kube/config
+      exit 0
+  when: not inventory_hostname is search("master0")
