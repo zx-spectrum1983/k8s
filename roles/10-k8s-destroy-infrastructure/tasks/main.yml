@@ -18,6 +18,15 @@
     become: true
     become_user: "{{localhost_localuser}}"
 
+  - name: Remove join token from inventory
+    lineinfile:
+      path: "{{inventory_file}}"
+      state: absent
+      regexp: '^k8s_join.*'
+    delegate_to: 127.0.0.1
+    become: true
+    become_user: "{{localhost_localuser}}"
+
   - name: Destroy plan
     shell: |
       export TF_CLI_CONFIG_FILE='/etc/terraform/.terraformrc'

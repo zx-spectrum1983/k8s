@@ -59,6 +59,14 @@
   - name: Get join command
     shell: kubeadm token create --print-join-command
     register: k8s_join
+  - name: Add join command to inventory file
+    lineinfile:
+      path: "{{inventory_file}}"
+      line: "k8s_join=\"{{k8s_join.stdout}}\""
+      insertafter: \[all:vars\].*
+    delegate_to: 127.0.0.1
+    become: true
+    become_user: "{{localhost_localuser}}"
 #  - name: Check pods
 #    shell: kubectl get pods -A
 #    register: pods_status
