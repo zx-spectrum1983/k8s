@@ -1,0 +1,22 @@
+---
+
+  - meta: refresh_inventory
+
+  - name: Reset previous cluster configs
+    shell: kubeadm reset -f
+
+  - name: Delete containerd config
+    file:
+      path: /etc/containerd/config.toml
+      state: absent
+
+  - name: Restart containerd
+    service:
+      name: containerd
+      state: restarted
+
+  - name: Join workers to kubernetes cluster
+    shell: "{{k8s_join}}"
+    register: join_status
+
+  - debug: var=join_status.stdout_lines

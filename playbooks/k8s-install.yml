@@ -17,7 +17,15 @@
  - hosts: k8s_master
    gather_facts: true
    roles:
-     - '20-k8s-install-masters'
+     - '20-k8s-install-kubetools'
      - '90-install-docker'
      - '90-install-etcd'
      - '20-k8s-init-cluster'
+
+ - hosts: k8s_worker
+   gather_facts: true
+   roles:
+     - '20-k8s-install-kubetools'
+     - '90-install-docker'
+     - '20-k8s-join-workers'
+     - '20-k8s-install-haproxy'
