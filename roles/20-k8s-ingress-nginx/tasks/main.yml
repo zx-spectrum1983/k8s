@@ -1,0 +1,21 @@
+---
+
+- name: Install ingress controller only to master0
+  block:
+  - name: Install controller
+    shell: kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.2.0/deploy/static/provider/cloud/deploy.yaml
+  - name: Create service config
+    template:
+      src: service-nodeport.yaml.j2
+      dest: service-nodeport.yaml
+  - name: Apply service config
+    shell: kubectl apply -f service-nodeport.yaml
+    register: service_check
+  - debug:
+      msg: "{{service_check.stdout}}"
+  - name: Check ingress controller
+    shell: kubectl get svc -n ingress-nginx
+    register: ingress_check
+  - debug:
+      msg: "{{ingress_check.stdout}}"
+  when: inventory_hostname is search("master0")

@@ -29,3 +29,8 @@
      - '90-install-docker'
      - '20-k8s-join-workers'
      - '20-k8s-install-haproxy'
+
+ - hosts: k8s_master
+   gather_facts: true
+   roles:
+     - '20-k8s-ingress-nginx'
